@@ -1,0 +1,22 @@
+{
+  "name": "gitlab-wolox-reports",
+  "version": "1.0.0",
+  "description": "Gitlab Metric Reports",
+  "main": "script.js",
+  "scripts": {
+    "test": "echo \"Error: no test specified\" && exit 1"
+  },
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/fede1608/gitlab-wolox-reports.git"
+  },
+  "author": "",
+  "license": "ISC",
+  "bugs": {
+    "url": "https://github.com/fede1608/gitlab-wolox-reports/issues"
+  },
+  "homepage": "https://github.com/fede1608/gitlab-wolox-reports#readme",
+  "dependencies": {
+    "axios": "^0.18.0"
+  }
+}
