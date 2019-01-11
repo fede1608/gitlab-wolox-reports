@@ -1,9 +1,10 @@
-require('dotenv').config();
-
+#!/usr/bin/env node
+const dotenv = require('dotenv');
 const readline = require('readline');
 const axios = require('axios');
 const moment = require('moment');
 const fs = require('fs');
+const opn = require('opn');
 const csvparse = require('json2csv').parse;
 
 const generateMovementsFromNotes = require('./service/movements');
@@ -30,8 +31,11 @@ function ask(data) {
 }
 
 function initEnv() {
+  opn('https://fala.cl/profile/personal_access_tokens');
+  console.log('Get a Access Token from here: https://fala.cl/profile/personal_access_tokens');
   return ask('Enter Gitlab Api Token: ').then(token => {
     fs.writeFileSync('./.env', `API_TOKEN=${token}`);
+    dotenv.load();
     return exec();
   });
 }
@@ -43,14 +47,15 @@ const addNotesToIssue = issue => {
 };
 
 function exec() {
-  return ask('Enter milestone name: ')
+  return ask('Enter sprint number: ')
     .then(answer => {
-      this.milestone = answer;
-      return get('milestones').then(milestones => {
-        const milestone = milestones.find(ms => ms.title.toLowerCase() === answer.toLowerCase());
-        console.log(`Milestone: ${milestone.title} Start Date: ${milestone.start_date} End Date: ${milestone.due_date}`);
-        return get(`issues?milestone=${milestone.title}`);
-      });
+      this.milestone = `SPRINT ${answer}`;
+      return get('milestones');
+    })
+    .then(milestones => {
+      const milestone = milestones.find(ms => ms.title.toLowerCase() === this.milestone.toLowerCase());
+      console.log(`Milestone: ${milestone.title} Start Date: ${milestone.start_date} End Date: ${milestone.due_date}`);
+      return get(`issues?milestone=${milestone.title}`);
     })
     .then(issues => {
       console.log('Fetching notes from issues');
@@ -60,7 +65,7 @@ function exec() {
       const data = issues.map(is => ({
         id: is.iid,
         title: is.title,
-        time: moment(is.closed_at).diff(moment(is.created_at), 'days')+1
+        time: moment(is.closed_at).diff(moment(is.created_at), 'days') + 1
       }));
       const csv = csvparse(data);
       console.log(csv);
@@ -69,9 +74,12 @@ function exec() {
       process.exit(0);
     })
     .catch(err => {
-      console.error('Something went wrong!', err);
+      console.log(err.Error);
+      process.exit(1);
     });
 }
+
+dotenv.load();
 if (!process.env.API_TOKEN) {
   initEnv();
 } else {
