@@ -40,6 +40,21 @@ function initEnv() {
   });
 }
 
+function getFirstNoteDateByAction(notes, name, action) {
+  return notes[name]
+    .filter(n => n.action === action)
+    .reduce((prev, curr) => {
+      if (moment(curr.date) < prev) {
+        prev = moment(curr.date);
+      }
+      return prev;
+    }, moment());
+}
+
+function getQAPickupTime(issue) {
+  return getFirstNoteDateByAction(issue.movements, 'TESTING', 'add').diff(getFirstNoteDateByAction(issue.movements, 'DEVELOPED', 'add'), 'days');
+}
+
 const addNotesToIssue = issue => {
   return get(`/issues/${issue.iid}/resource_label_events`)
     .then(generateMovementsFromNotes)
@@ -62,10 +77,11 @@ function exec() {
       return Promise.all(issues.map(addNotesToIssue));
     })
     .then(issues => {
+      fs.writeFileSync('./issues.json', JSON.stringify(issues));
       const data = issues.map(is => ({
         id: is.iid,
         title: is.title,
-        time: moment(is.closed_at).diff(moment(is.created_at), 'days') + 1
+        qa_pickup_time: getQAPickupTime(is)
       }));
       const csv = csvparse(data);
       console.log(csv);
@@ -74,7 +90,7 @@ function exec() {
       process.exit(0);
     })
     .catch(err => {
-      console.log(err.Error);
+      console.log(err.Error || err);
       process.exit(1);
     });
 }
