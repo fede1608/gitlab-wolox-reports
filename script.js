@@ -1,9 +1,12 @@
 require('dotenv').config();
+
 const readline = require('readline');
 const axios = require('axios');
 const moment = require('moment');
 const fs = require('fs');
 const csvparse = require('json2csv').parse;
+
+const generateMovementsFromNotes = require('./service/movements');
 
 const rl = readline.createInterface({
   input: process.stdin,
@@ -33,6 +36,12 @@ function initEnv() {
   });
 }
 
+const addNotesToIssue = issue => {
+  return get(`/issues/${issue.iid}/resource_label_events`)
+    .then(generateMovementsFromNotes)
+    .then(movements => ({ ...issue, movements }));
+};
+
 function exec() {
   return ask('Enter milestone name: ')
     .then(answer => {
@@ -42,6 +51,10 @@ function exec() {
         console.log(`Milestone: ${milestone.title} Start Date: ${milestone.start_date} End Date: ${milestone.due_date}`);
         return get(`issues?milestone=${milestone.title}`);
       });
+    })
+    .then(issues => {
+      console.log('Fetching notes from issues');
+      return Promise.all(issues.map(addNotesToIssue));
     })
     .then(issues => {
       const data = issues.map(is => ({
@@ -54,6 +67,9 @@ function exec() {
       const filename = `./Linio-Thor Report - ${this.milestone.toUpperCase()} - ${new Date().getTime()}.csv`;
       fs.writeFileSync(filename, csv);
       process.exit(0);
+    })
+    .catch(err => {
+      console.error('Something went wrong!', err);
     });
 }
 if (!process.env.API_TOKEN) {
