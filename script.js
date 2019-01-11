@@ -56,6 +56,11 @@ function getQAPickupTime(issue) {
   return getFirstNoteDateByAction(issue.movements, 'TESTING', 'add').diff(getFirstNoteDateByAction(issue.movements, 'DEVELOPED', 'add'), 'days');
 }
 
+function getQARejections(issue) {
+  if (!issue.movements.TESTING) return 0;
+  return issue.movements.TESTING.filter(n => n.action === 'add').length - 1;
+}
+
 const addNotesToIssue = issue => {
   return get(`/issues/${issue.iid}/resource_label_events`)
     .then(generateMovementsFromNotes)
@@ -81,6 +86,7 @@ function exec() {
       const data = issues.map(is => ({
         id: is.iid,
         title: is.title,
+        qa_rejections: getQARejections(is),
         qa_pickup_time: getQAPickupTime(is)
       }));
       const csv = csvparse(data);
