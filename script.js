@@ -52,6 +52,7 @@ function getFirstNoteDateByAction(notes, name, action) {
 }
 
 function getQAPickupTime(issue) {
+  if (!issue.movements.TESTING) return null;
   return getFirstNoteDateByAction(issue.movements, 'TESTING', 'add').diff(getFirstNoteDateByAction(issue.movements, 'DEVELOPED', 'add'), 'days');
 }
 
@@ -77,7 +78,6 @@ function exec() {
       return Promise.all(issues.map(addNotesToIssue));
     })
     .then(issues => {
-      fs.writeFileSync('./issues.json', JSON.stringify(issues));
       const data = issues.map(is => ({
         id: is.iid,
         title: is.title,
