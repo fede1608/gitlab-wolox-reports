@@ -85,4 +85,3 @@ if (!process.env.API_TOKEN) {
 } else {
   exec();
 }
-
