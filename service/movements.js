@@ -5,9 +5,9 @@ const parseNotesToMovements = R.map(note => {
   return { id, name, date, action };
 });
 
-const groupMovementsById = R.groupBy(R.prop('name'));
+const groupMovementsByName = R.groupBy(R.prop('name'));
 
 module.exports = R.pipe(
   parseNotesToMovements,
-  groupMovementsById
+  groupMovementsByName
 );
