@@ -8,6 +8,7 @@ const opn = require('opn');
 const csvparse = require('json2csv').parse;
 
 const generateMovementsFromNotes = require('./service/movements');
+const getPickupTime = require('./metrics/pickupTime');
 
 const rl = readline.createInterface({
   input: process.stdin,
@@ -40,6 +41,27 @@ function initEnv() {
   });
 }
 
+function getFirstNoteDateByAction(notes, name, action) {
+  return notes[name] && notes[name]
+    .filter(n => n.action === action)
+    .reduce((prev, curr) => {
+      if (moment(curr.date) < prev) {
+        prev = moment(curr.date);
+      }
+      return prev;
+    }, moment());
+}
+
+function getQAPickupTime(issue) {
+  if (!issue.movements.TESTING) return null;
+  return getFirstNoteDateByAction(issue.movements, 'TESTING', 'add').diff(getFirstNoteDateByAction(issue.movements, 'DEVELOPED', 'add'), 'ms');
+}
+
+function getQARejections(issue) {
+  if (!issue.movements.TESTING) return 0;
+  return issue.movements.TESTING.filter(n => n.action === 'add').length - 1;
+}
+
 const addNotesToIssue = issue => {
   return get(`/issues/${issue.iid}/resource_label_events`)
     .then(generateMovementsFromNotes)
@@ -65,16 +87,17 @@ function exec() {
       const data = issues.map(is => ({
         id: is.iid,
         title: is.title,
-        time: moment(is.closed_at).diff(moment(is.created_at), 'days') + 1
+        pickup_time: getPickupTime(is),
+        qa_rejections: getQARejections(is),
+        qa_pickup_time: getQAPickupTime(is)
       }));
       const csv = csvparse(data);
-      console.log(csv);
       const filename = `./Linio-Thor Report - ${this.milestone.toUpperCase()} - ${new Date().getTime()}.csv`;
       fs.writeFileSync(filename, csv);
       process.exit(0);
     })
     .catch(err => {
-      console.log(err.Error);
+      console.log(err.Error || err);
       process.exit(1);
     });
 }
