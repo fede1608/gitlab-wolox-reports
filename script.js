@@ -94,6 +94,7 @@ function exec() {
       const csv = csvparse(data);
       const filename = `./Linio-Thor Report - ${this.milestone.toUpperCase()} - ${new Date().getTime()}.csv`;
       fs.writeFileSync(filename, csv);
+      console.log(`File "${filename}" successfully created on current dir.`);
       process.exit(0);
     })
     .catch(err => {

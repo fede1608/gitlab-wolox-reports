@@ -1,6 +1,6 @@
 {
   "name": "thor-report",
-  "version": "1.0.3",
+  "version": "1.0.5",
   "description": "Gitlab Metric Reports",
   "main": "script.js",
   "scripts": {
