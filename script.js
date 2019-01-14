@@ -8,6 +8,7 @@ const opn = require('opn');
 const csvparse = require('json2csv').parse;
 
 const generateMovementsFromNotes = require('./service/movements');
+const getPickupTime = require('./metrics/pickupTime');
 
 const rl = readline.createInterface({
   input: process.stdin,
@@ -41,7 +42,7 @@ function initEnv() {
 }
 
 function getFirstNoteDateByAction(notes, name, action) {
-  return notes[name]
+  return notes[name] && notes[name]
     .filter(n => n.action === action)
     .reduce((prev, curr) => {
       if (moment(curr.date) < prev) {
@@ -53,7 +54,7 @@ function getFirstNoteDateByAction(notes, name, action) {
 
 function getQAPickupTime(issue) {
   if (!issue.movements.TESTING) return null;
-  return getFirstNoteDateByAction(issue.movements, 'TESTING', 'add').diff(getFirstNoteDateByAction(issue.movements, 'DEVELOPED', 'add'), 'days');
+  return getFirstNoteDateByAction(issue.movements, 'TESTING', 'add').diff(getFirstNoteDateByAction(issue.movements, 'DEVELOPED', 'add'), 'ms');
 }
 
 function getQARejections(issue) {
@@ -86,11 +87,11 @@ function exec() {
       const data = issues.map(is => ({
         id: is.iid,
         title: is.title,
+        pickup_time: getPickupTime(is),
         qa_rejections: getQARejections(is),
         qa_pickup_time: getQAPickupTime(is)
       }));
       const csv = csvparse(data);
-      console.log(csv);
       const filename = `./Linio-Thor Report - ${this.milestone.toUpperCase()} - ${new Date().getTime()}.csv`;
       fs.writeFileSync(filename, csv);
       process.exit(0);
