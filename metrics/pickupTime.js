@@ -1,14 +1,12 @@
 /**
  * pickupTime
- * @param {Array<{ issue }>} issues
- * @return { Integer, Float, String}
+ * @param { issue } issue
+ * @return { integer }
  */
 
 const R = require('ramda');
-const moment = require('moment');
 
 const {
-  average,
   getFirstActionByName,
   getLastDate
 } = require('./utils');
@@ -39,12 +37,4 @@ const issuePickupTime = R.pipe(
   pickupTime
 );
 
-const pickupTimeBreakdown = R.map(issuePickupTime);
-
-module.exports = issues => {
-  const breakdown = pickupTimeBreakdown(issues);
-  const miliseconds = average(breakdown);
-  const formated = moment.duration(miliseconds, 'ms').humanize();
-
-  return { count: breakdown.length, miliseconds, formated };
-};
+module.exports = issuePickupTime;
