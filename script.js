@@ -9,6 +9,7 @@ const csvparse = require('json2csv').parse;
 
 const generateMovementsFromNotes = require('./service/movements');
 const getPickupTime = require('./metrics/pickupTime');
+const { parseTime, getFirstNoteDateByAction } = require('./metrics/utils');
 
 const rl = readline.createInterface({
   input: process.stdin,
@@ -41,15 +42,18 @@ function initEnv() {
   });
 }
 
-function getFirstNoteDateByAction(notes, name, action) {
-  return notes[name] && notes[name]
-    .filter(n => n.action === action)
-    .reduce((prev, curr) => {
-      if (moment(curr.date) < prev) {
-        prev = moment(curr.date);
-      }
-      return prev;
-    }, moment());
+function getMergeTime(issue) {
+  if (!issue.closed_at) return null;
+  if (issue.movements['CODE REVIEW']) {
+    return moment(issue.closed_at).diff(getFirstNoteDateByAction(issue.movements, 'CODE REVIEW', 'add'), 'ms');
+  }
+  return moment(issue.closed_at).diff(getFirstNoteDateByAction(issue.movements, 'DEVELOPED', 'add'), 'ms');
+}
+
+function getLifecycleTime(issue) {
+  if (!issue.movements.DOING) return null;
+  if (!issue.closed_at) return null;
+  return moment(issue.closed_at).diff(getFirstNoteDateByAction(issue.movements, 'DOING', 'add'), 'ms');
 }
 
 function getQAPickupTime(issue) {
@@ -87,9 +91,12 @@ function exec() {
       const data = issues.map(is => ({
         id: is.iid,
         title: is.title,
-        pickup_time: getPickupTime(is),
-        qa_rejections: getQARejections(is),
-        qa_pickup_time: getQAPickupTime(is)
+        sprint: this.milestone,
+        pickup_time: parseTime(getPickupTime(is)),
+        merge_time: parseTime(getMergeTime(is)),
+        lifecycle: parseTime(getLifecycleTime(is)),
+        qa_pickup_time: parseTime(getQAPickupTime(is)),
+        qa_rejections: getQARejections(is)
       }));
       const csv = csvparse(data);
       const filename = `./Linio-Thor Report - ${this.milestone.toUpperCase()} - ${new Date().getTime()}.csv`;
