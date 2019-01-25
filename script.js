@@ -1,31 +1,23 @@
 #!/usr/bin/env node
 const dotenv = require('dotenv');
 const readline = require('readline');
-const axios = require('axios');
 const moment = require('moment');
+const _ = require('lodash');
 const fs = require('fs');
 const opn = require('opn');
 const csvparse = require('json2csv').parse;
 
 const generateMovementsFromNotes = require('./service/movements');
+const generateMrsFromNotes = require('./service/mergeRequests');
 const getPickupTime = require('./metrics/pickupTime');
 const { parseTime, getFirstNoteDateByAction } = require('./metrics/utils');
+const { get } = require('./service/api');
 
 const rl = readline.createInterface({
   input: process.stdin,
   output: process.stdout
 });
 
-function get(path) {
-  return axios({
-    method: 'get',
-    baseURL: 'https://fala.cl/api/v4/projects/223/',
-    url: path,
-    port: 443,
-    headers: { 'PRIVATE-TOKEN': process.env.API_TOKEN },
-    httpsAgent: this.httpsAgent
-  }).then(res => res.data);
-}
 function ask(data) {
   return new Promise(resolve => {
     rl.question(data, input => resolve(input));
@@ -37,7 +29,7 @@ function initEnv() {
   console.log('Get a Access Token from here: https://fala.cl/profile/personal_access_tokens');
   return ask('Enter Gitlab Api Token: ').then(token => {
     fs.writeFileSync('./.env', `API_TOKEN=${token}`);
-    dotenv.load();
+    process.env.API_TOKEN = token;
     return exec();
   });
 }
@@ -72,11 +64,20 @@ const addNotesToIssue = issue => {
     .then(movements => ({ ...issue, movements }));
 };
 
+const addMRsToIssue = issue => {
+  return get(`/issues/${issue.iid}/notes`)
+    .then(generateMrsFromNotes);
+};
+
 function exec() {
   return ask('Enter sprint number: ')
     .then(answer => {
       this.milestone = `SPRINT ${answer}`;
-      return get('milestones');
+      return get('milestones').catch(err => {
+        if (err.response.status === 401) {
+          return initEnv().then(() => process.exit());
+        }
+      });
     })
     .then(milestones => {
       const milestone = milestones.find(ms => ms.title.toLowerCase() === this.milestone.toLowerCase());
@@ -99,10 +100,19 @@ function exec() {
         qa_rejections: getQARejections(is)
       }));
       const csv = csvparse(data);
-      const filename = `./Linio-Thor Report - ${this.milestone.toUpperCase()} - ${new Date().getTime()}.csv`;
+      const filename = `./Linio-Thor Issues Report - ${this.milestone.toUpperCase()} - ${new Date().getTime()}.csv`;
       fs.writeFileSync(filename, csv);
       console.log(`File "${filename}" successfully created on current dir.`);
-      process.exit(0);
+      return issues;
+    })
+    .then(issues => {
+      Promise.all(issues.map(addMRsToIssue)).then(mrsArray => {
+        const csv = csvparse(_.flatten(mrsArray));
+        const filename = `./Linio-Thor MRs Report - ${this.milestone.toUpperCase()} - ${new Date().getTime()}.csv`;
+        fs.writeFileSync(filename, csv);
+        console.log(`File "${filename}" successfully created on current dir.`);
+        process.exit(0);
+      });
     })
     .catch(err => {
       console.log(err.Error || err);

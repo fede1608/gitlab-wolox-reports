@@ -1,6 +1,6 @@
 {
   "name": "thor-report",
-  "version": "1.1.0",
+  "version": "1.2.0",
   "description": "Gitlab Metric Reports",
   "main": "script.js",
   "scripts": {
@@ -24,9 +24,10 @@
     "axios": "^0.18.0",
     "dotenv": "^6.2.0",
     "json2csv": "^4.3.2",
+    "lodash": "^4.17.11",
     "moment": "^2.23.0",
-    "ramda": "^0.26.1",
-    "opn": "^5.4.0"
+    "opn": "^5.4.0",
+    "ramda": "^0.26.1"
   },
   "devDependencies": {
     "eslint": "^5.6.0",
@@ -34,7 +35,7 @@
     "eslint-config-airbnb-standard": "^2.1.6",
     "eslint-plugin-import": "^2.14.0"
   },
-  "bin":{
+  "bin": {
     "thor-report": "./script.js"
   }
 }
