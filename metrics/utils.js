@@ -8,7 +8,7 @@ exports.getLastDate = (dateA, dateB) => (moment(dateA) > moment(dateB) ? dateA :
 exports.getFirstActionByName = (name, movements) => R.find(R.propEq('action', name), movements || []);
 
 exports.parseTime = milli => {
-  if (milli === undefined || milli === null) return 'null';
+  if (milli === undefined || milli === null || isNaN(milli)) return 'null';
   const fmt = new Date(milli).toISOString().slice(11, -5);
   if (milli >= 8.64e7) { /* >= 24 hours */
     const parts = fmt.split(/:(?=\d{2}:)/);

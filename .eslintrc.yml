@@ -53,3 +53,4 @@ rules:
   arrow-parens: ["error", "as-needed"]
   object-curly-newline: 0
   arrow-body-style: 0
+  no-restricted-globals: 0
