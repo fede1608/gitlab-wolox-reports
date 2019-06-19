@@ -59,13 +59,13 @@ function getQARejections(issue) {
 }
 
 const addNotesToIssue = issue => {
-  return get(`/issues/${issue.iid}/resource_label_events`)
+  return get(`/issues/${issue.iid}/resource_label_events?per_page=1000`)
     .then(generateMovementsFromNotes)
     .then(movements => ({ ...issue, movements }));
 };
 
 const addMRsToIssue = issue => {
-  return get(`/issues/${issue.iid}/notes`)
+  return get(`/issues/${issue.iid}/notes?per_page=1000`)
     .then(generateMrsFromNotes);
 };
 
@@ -73,7 +73,7 @@ function exec() {
   return ask('Enter sprint number: ')
     .then(answer => {
       this.milestone = `SPRINT ${answer}`;
-      return get('milestones').catch(err => {
+      return get('milestones?per_page=1000').catch(err => {
         if (err.response.status === 401) {
           return initEnv().then(() => process.exit());
         }
@@ -82,7 +82,7 @@ function exec() {
     .then(milestones => {
       const milestone = milestones.find(ms => ms.title.toLowerCase() === this.milestone.toLowerCase());
       console.log(`Milestone: ${milestone.title} Start Date: ${milestone.start_date} End Date: ${milestone.due_date}`);
-      return get(`issues?milestone=${milestone.title}`);
+      return get(`issues?milestone=${milestone.title}&per_page=1000`);
     })
     .then(issues => {
       console.log('Fetching notes from issues');
